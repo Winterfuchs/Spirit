@@ -2,6 +2,9 @@ AddCSLuaFile()
 
 if SERVER then
 	resource.AddWorkshop( "925075129" )
+	
+	util.AddNetworkString("ttt_spirit_register_thrower")
+	util.AddNetworkString("ttt_spirit_update_team")
 end
 
 SWEP.HoldType = "normal"
@@ -15,7 +18,7 @@ if CLIENT then
 
    SWEP.EquipMenuData = {
       type = "item_weapon",
-      desc = "It attacks nearby Innocents and Detectives.\nIt does more DMG if Innocents are on max. Range!"
+      desc = "Attacks nearby enemies.\nDoes more damage when further away."
    };
 
    SWEP.Icon = "vgui/ttt/icon_Spirit"
@@ -61,7 +64,7 @@ function SWEP:PrimaryAttack()
 	 self:CreateSpirit()
 	 self:TakePrimaryAmmo ( 1 )
 	 if SERVER then
-	 self:Remove()
+		self:Remove()
 	 end
 	 
 end
@@ -85,6 +88,23 @@ function SWEP:CreateSpirit()
 				local vthrow = vvel + vang * 100
 				spirit:SetPos(vsrc + vang * 10)
 				spirit:Spawn()
+				spirit:SetThrower(ply)
+				
+				spirit:SetNWEntity("spirit_owner", ply)
+				
+				if TTT2 then
+				local team = TEAMS[ply:GetTeam()]
+
+				spirit.userdata = {
+					team = ply:GetTeam()
+				}
+				timer.Simple( 0.1, function()
+					net.Start("ttt_spirit_register_thrower")
+					net.WriteEntity(spirit)
+					net.WriteString(ply:GetTeam())
+					net.Broadcast()
+				end)
+			end
 				
 				local phys = spirit:GetPhysicsObject()
 				
@@ -117,5 +137,15 @@ function SWEP:OnRemove()
 end
 
 function SWEP:OnDrop()
-self:Remove()
+	self:Remove()
+end
+
+if TTT2 then
+	if SERVER then
+		hook.Add("TTT2UpdateTeam", "tt2_spirit_team", function(ply, old, new)
+			net.Start("ttt_spirit_update_team")
+			net.WriteString(new)
+			net.Send(ply)
+		end)
+	end
 end

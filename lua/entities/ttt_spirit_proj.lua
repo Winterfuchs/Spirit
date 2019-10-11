@@ -4,16 +4,8 @@ ENT.Type = "anim"
 
 AccessorFunc(ENT, "thrower", "Thrower")
 
-ENT.NextUse = 0
-ENT.AirTime = 0
-ENT.RoundEnded = false
 ENT.PlayersInSphere = {}
 ENT.RandomPlayer = {}
-ENT.DamageCooldown = CurTime() + 1.5
-ENT.RemoveTimer = CurTime() + 1.5
-ENT.NextUse = 0
-ENT.Timer = CurTime()
-ENT.TimeLeft = 100
 
 function ENT:Initialize()
 	self:SetModel( "models/maxofs2d/hover_basic.mdl" )
@@ -38,32 +30,26 @@ end
 function ENT:Think() 
 	self:SearchPlayer()
 	self:NextThink( CurTime() + 2 )
+
 	return true;
 end
 
 function ENT:SearchPlayer()
 	if SERVER then
-		local expos = self:GetPos();
-		local sphere = ents.FindInSphere(expos, 500)
-		
-		local throwerRole = self:GetThrower():GetRole()
-		
-		local role_jackal = ROLE_JACKAL
-		local role_sidekick = ROLE_SIDEKICK
-		local role_dealer = ROLE_DEALER
-		
-		if ROLES then
-			role_jackal = ROLES.JACKAL.index
-			role_sidekick = ROLES.SIDEKICK.index
-			role_dealer = ROLES.DEALER.index
-		end
+		local searchRadius = self:GetPos();
+		local sphere = ents.FindInSphere(searchRadius, 500)
+		local thrower = self:GetThrower()
 					
 		for key, v in pairs(sphere) do
-				if v:IsPlayer() && v:GetRole() != throwerRole and v:Alive() then
-					if throwerRole == role_jackal && v:GetRole() == role_sidekick || throwerRole == role_sidekick && v:GetRole() == role_jackal then return end
-					if throwerRole == ROLE_TRAITOR && v:GetRole() == role_dealer || throwerRole == role_dealer && v:GetRole() == ROLE_TRAITOR then return end
+			if TTT2 then
+				if v:IsPlayer() and v:Alive() and v:GetTeam() != thrower:GetTeam() then 
 					table.insert(self.PlayersInSphere, v)
 				end
+			else
+				if v:IsPlayer() && v:GetRole() != thrower:GetRole() and v:Alive() then	
+					table.insert(self.PlayersInSphere, v)
+				end
+			end
 		end
 		
 		TableCount = table.Count(self.PlayersInSphere)	
@@ -82,10 +68,7 @@ function ENT:SearchPlayer()
 					phys:ApplyForceCenter((self:GetPos() - self.RandomPlayer:GetShootPos())*-1220.80665 )
 				end
 		end
-		
 		table.Empty(self.PlayersInSphere)
-	
-
 	end
 end
 
